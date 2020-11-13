@@ -6,12 +6,19 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 
+import com.beefe.picker.R;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -47,6 +54,7 @@ public class LoopView extends View {
 
     private Paint paintOuterText;
     private Paint paintCenterText;
+    private Paint paintSelectedText;
     private Paint paintIndicator;
 
     List<String> items;
@@ -57,6 +65,7 @@ public class LoopView extends View {
     // 条目间距倍数
     float lineSpacingMultiplier;
     boolean isLoop;
+    boolean multiSelection;
 
     // 第一条线Y坐标值
     private int firstLineY;
@@ -86,6 +95,10 @@ public class LoopView extends View {
 
     private Rect tempRect = new Rect();
 
+    private Drawable mCheckmarkImage;
+
+    private List<Integer> selectedIndices = new ArrayList<>();
+
     public LoopView(Context context) {
         super(context);
         initLoopView(context);
@@ -101,6 +114,14 @@ public class LoopView extends View {
         initLoopView(context);
     }
 
+    public static float convertPixelsToDp(float px, Context context){
+        return px / ((float) context.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT);
+    }
+
+    public static float convertDpToPixel(float dp, Context context){
+        return dp * ((float) context.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT);
+    }
+
     private void initLoopView(Context context) {
         this.context = context;
         handler = new MessageHandler(this);
@@ -110,12 +131,14 @@ public class LoopView extends View {
         lineSpacingMultiplier = 2.0F;
         isLoop = true;
         itemsVisible = 9;
-        textSize = (int) (context.getResources().getDisplayMetrics().density * 16);
+        textSize = (int) (context.getResources().getDisplayMetrics().density * 24);
 
         totalScrollY = 0;
         initPosition = -1;
 
         initPaints();
+
+        mCheckmarkImage = context.getResources().getDrawable(R.drawable.ic_checkmark);
     }
 
     private void initPaints() {
@@ -128,9 +151,14 @@ public class LoopView extends View {
         paintCenterText = new Paint();
         paintCenterText.setColor(0xff000000);
         paintCenterText.setAntiAlias(true);
-        paintCenterText.setTextScaleX(scaleX);
         paintCenterText.setTypeface(Typeface.MONOSPACE);
         paintCenterText.setTextSize(textSize);
+
+        paintSelectedText = new Paint();
+        paintSelectedText.setColor(0xff006ded);
+        paintSelectedText.setAntiAlias(true);
+        paintSelectedText.setTypeface(Typeface.MONOSPACE);
+        paintSelectedText.setTextSize(textSize);
 
         paintIndicator = new Paint();
         paintIndicator.setColor(0xffb8bbc2);
@@ -206,6 +234,7 @@ public class LoopView extends View {
     public void setTypeface(Typeface typeface){
         paintOuterText.setTypeface(typeface);
         paintCenterText.setTypeface(typeface);
+        paintSelectedText.setTypeface(typeface);
         invalidate();
     }
 
@@ -213,11 +242,16 @@ public class LoopView extends View {
         isLoop = false;
     }
 
+    public void setMultiSelection(boolean multi) {
+        multiSelection = multi;
+    }
+
     public final void setTextSize(float size) {
         if (size > 0.0F) {
             this.textSize = (int) (context.getResources().getDisplayMetrics().density * size);
             paintOuterText.setTextSize(textSize);
             paintCenterText.setTextSize(textSize);
+            paintSelectedText.setTextSize(textSize);
             remeasure();
             invalidate();
         }
@@ -235,6 +269,18 @@ public class LoopView extends View {
     public void setSelectedItem(String item) {
         int selectedIndex = items.indexOf(item);
         setSelectedPosition(selectedIndex);
+    }
+
+    public void setSelectedItems(String[] is) {
+        int scrollIndex = items.size() - 1;
+        for (int i = 0; i < is.length; i++) {
+            int index = items.indexOf(is[i]);
+            if (index < scrollIndex) {
+                scrollIndex = index;
+            }
+            selectedIndices.add(index);
+        }
+        setSelectedItem(items.get(scrollIndex));
     }
 
     public int getItemPosition(String item) {
@@ -364,6 +410,11 @@ public class LoopView extends View {
         canvas.drawLine(0.0F, firstLineY, getWidth(), firstLineY, paintIndicator);
         canvas.drawLine(0.0F, secondLineY, getWidth(), secondLineY, paintIndicator);
 
+        List<String> selectedText = new ArrayList<>();
+        for (int p = 0; p < selectedIndices.size(); p++) {
+            selectedText.add(items.get(selectedIndices.get(p)));
+        }
+
         int j1 = 0;
         while (j1 < itemsVisible) {
             canvas.save();
@@ -380,7 +431,21 @@ public class LoopView extends View {
                 canvas.translate(0.0F, translateY);
                 canvas.scale(1.0F, (float) Math.sin(radian));
                 String text = as[j1];
-                if (translateY <= firstLineY && maxTextHeight + translateY >= firstLineY) {
+                if (selectedText.contains(text)) {
+                    canvas.save();
+                    canvas.clipRect(0, 0, getWidth(), (int) (itemHeight));
+                    drawText(canvas, text, getX(text, paintSelectedText), getY(paintSelectedText), paintSelectedText);
+                    canvas.restore();
+                    canvas.save();
+                    canvas.clipRect(convertDpToPixel(45, this.context), 0, convertDpToPixel(45, this.context) + maxTextHeight, maxTextHeight);
+                    mCheckmarkImage.setBounds(canvas.getClipBounds());
+                    mCheckmarkImage.draw(canvas);
+                    canvas.restore();
+                    if (translateY >= firstLineY && maxTextHeight + translateY <= secondLineY) {
+                        selectedItem = text;
+                        selectedIndex = items.indexOf(text);
+                    }
+                } else if (translateY <= firstLineY && maxTextHeight + translateY >= firstLineY) {
                     // 条目经过第一条线
                     canvas.save();
                     canvas.clipRect(0, 0, getWidth(), firstLineY - translateY);
@@ -473,6 +538,34 @@ public class LoopView extends View {
                 break;
 
             case MotionEvent.ACTION_UP:
+                if (!eventConsumed) {
+                    float y = event.getY();
+                    double l = Math.acos((radius - y) / radius) * radius;
+                    int circlePosition = (int) ((l + itemHeight / 2) / itemHeight);
+
+                    float extraOffset = (totalScrollY % itemHeight + itemHeight) % itemHeight;
+                    mOffset = (int) ((circlePosition - itemsVisible / 2) * itemHeight - extraOffset);
+
+                    if ((System.currentTimeMillis() - startTime) > 120) {
+                        // 处理拖拽事件
+                        smoothScroll(ACTION.DRAG);
+                    } else {
+                        // 处理条目点击事件
+                        smoothScroll(ACTION.CLICK);
+                    }
+
+                    if (multiSelection) {
+                        if (y >= firstLineY && y <= secondLineY) {
+                            if (selectedIndices.contains(selectedIndex)) {
+                                selectedIndices.remove(Integer.valueOf(selectedIndex));
+                            } else {
+                                selectedIndices.add(selectedIndex);
+                            }
+                            onItemSelectedListener.onItemSelectedForMultipleSelection(items.get(selectedIndex), selectedIndex);
+                        }
+                    }
+                }
+                break;
             default:
                 if (!eventConsumed) {
                     float y = event.getY();

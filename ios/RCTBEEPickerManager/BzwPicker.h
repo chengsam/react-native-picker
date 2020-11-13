@@ -7,6 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "BzwPickerViewRow.h"
 
 #define SCREEN_WIDTH ([UIScreen mainScreen].bounds.size.width)
 #define SCREEN_HEIGHT ([UIScreen mainScreen].bounds.size.height)
@@ -14,7 +15,7 @@
 
 typedef void(^backBolock)(NSDictionary * );
 
-@interface BzwPicker : UIView<UIPickerViewDataSource,UIPickerViewDelegate>
+@interface BzwPicker : UIView<UIPickerViewDataSource,UIPickerViewDelegate, UIGestureRecognizerDelegate>
 
 @property (strong,nonatomic)UIPickerView *pick;
 
@@ -33,6 +34,8 @@ typedef void(^backBolock)(NSDictionary * );
 
 @property (strong,nonatomic)NSArray *selectArry;//2级联动时候用的
 
+@property (strong, nonatomic) NSMutableArray *selectedIndices;
+
 @property (strong,nonatomic)UIButton *leftBtn;//取消
 @property (strong,nonatomic)UIButton *rightBtn;
 
@@ -44,6 +47,9 @@ typedef void(^backBolock)(NSDictionary * );
 @property(strong,nonatomic)NSString *pickerFontFamily;
 @property(strong,nonatomic)NSArray *pickerFontColor;
 @property(strong,nonatomic)NSString *pickerRowHeight;
+@property(strong,nonatomic)NSString *pickerLeftText;
+@property(strong,nonatomic)NSString *pickerRightText;
+@property(assign,nonatomic)BOOL multiSelection;
 
 
 
@@ -80,7 +86,7 @@ typedef void(^backBolock)(NSDictionary * );
 
 
 -(instancetype)initWithFrame:(CGRect)frame dic:(NSDictionary *)dic leftStr:(NSString *)leftStr centerStr:(NSString *)centerStr rightStr:(NSString *)rightStr topbgColor:(NSArray *)topbgColor bottombgColor:(NSArray *)bottombgColor leftbtnbgColor:(NSArray *)leftbtnbgColor rightbtnbgColor:(NSArray *)rightbtnbgColor centerbtnColor:(NSArray *)centerbtnColor selectValueArry:(NSArray *)selectValueArry  weightArry:(NSArray *)weightArry
-       pickerToolBarFontSize:(NSString *)pickerToolBarFontSize  pickerFontSize:(NSString *)pickerFontSize  pickerFontColor:(NSArray *)pickerFontColor  pickerRowHeight:(NSString *)pickerRowHeight  pickerFontFamily:(NSString *)pickerFontFamily;
+       pickerToolBarFontSize:(NSString *)pickerToolBarFontSize  pickerFontSize:(NSString *)pickerFontSize  pickerFontColor:(NSArray *)pickerFontColor  pickerRowHeight:(NSString *)pickerRowHeight  pickerFontFamily:(NSString *)pickerFontFamily pickerLeftText:(NSString *)pickerLeftText pickerRightText:(NSString *)pickerRightText multiSelection:(BOOL)multiSelection;
 
 -(void)selectRow;
 @end

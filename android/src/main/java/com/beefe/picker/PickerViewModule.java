@@ -6,7 +6,7 @@ import android.app.Dialog;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Typeface;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
@@ -112,6 +112,11 @@ public class PickerViewModule extends ReactContextBaseJavaModule implements Life
 
     private static final String PICKER_FONT_FAMILY = "pickerFontFamily";
 
+    private static final String PICKER_LEFT_TEXT = "pickerLeftText";
+    private static final String PICKER_RIGHT_TEXT = "pickerRightText";
+
+    private static final String MULTI_SELECTION = "multiSelection";
+
     private static final String PICKER_EVENT_NAME = "pickerEvent";
     private static final String EVENT_KEY_CONFIRM = "confirm";
     private static final String EVENT_KEY_CANCEL = "cancel";
@@ -126,7 +131,11 @@ public class PickerViewModule extends ReactContextBaseJavaModule implements Life
     private String confirmText;
     private String cancelText;
     private String titleText;
+    private String leftText;
+    private String rightText;
     private int pickerTextEllipsisLen;
+
+    private boolean multiSelection = false;
 
     private double[] weights;
 
@@ -156,6 +165,8 @@ public class PickerViewModule extends ReactContextBaseJavaModule implements Life
             TextView cancelTV = (TextView) view.findViewById(R.id.cancel);
             TextView titleTV = (TextView) view.findViewById(R.id.title);
             TextView confirmTV = (TextView) view.findViewById(R.id.confirm);
+            TextView leftTextTV = (TextView) view.findViewById(R.id.leftText);
+            TextView rightTextTV = (TextView) view.findViewById(R.id.rightText);
             RelativeLayout pickerLayout = (RelativeLayout) view.findViewById(R.id.pickerLayout);
             pickerViewLinkage = (PickerViewLinkage) view.findViewById(R.id.pickerViewLinkage);
             pickerViewAlone = (PickerViewAlone) view.findViewById(R.id.pickerViewAlone);
@@ -163,9 +174,11 @@ public class PickerViewModule extends ReactContextBaseJavaModule implements Life
             int barViewHeight;
             if (options.hasKey(PICKER_TOOL_BAR_HEIGHT)) {
                 try {
-                    barViewHeight = options.getInt(PICKER_TOOL_BAR_HEIGHT);
+                    int optionHeight = options.getInt(PICKER_TOOL_BAR_HEIGHT);
+                    barViewHeight = (int) (activity.getResources().getDisplayMetrics().density * optionHeight);
                 } catch (Exception e) {
-                    barViewHeight = (int) options.getDouble(PICKER_TOOL_BAR_HEIGHT);
+                    int optionHeight = (int) options.getDouble(PICKER_TOOL_BAR_HEIGHT);
+                    barViewHeight = (int) (activity.getResources().getDisplayMetrics().density * optionHeight);
                 }
             } else {
                 barViewHeight = (int) (activity.getResources().getDisplayMetrics().density * 40);
@@ -203,7 +216,11 @@ public class PickerViewModule extends ReactContextBaseJavaModule implements Life
                 public void onClick(View v) {
                     switch (curStatus) {
                         case 0:
-                            returnData = pickerViewAlone.getSelectedData();
+                            if (multiSelection) {
+                                returnData = pickerViewAlone.getSelectedDataForMultipleSelection();
+                            } else {
+                                returnData = pickerViewAlone.getSelectedData();
+                            }
                             break;
                         case 1:
                             returnData = pickerViewLinkage.getSelectedData();
@@ -258,6 +275,10 @@ public class PickerViewModule extends ReactContextBaseJavaModule implements Life
                 isLoop = options.getBoolean(IS_LOOP);
             }
 
+            if (options.hasKey(MULTI_SELECTION)) {
+                multiSelection = options.getBoolean(MULTI_SELECTION);
+            }
+
             if (options.hasKey(WEIGHTS)) {
                 ReadableArray array = options.getArray(WEIGHTS);
                 weights = new double[array.size()];
@@ -300,6 +321,17 @@ public class PickerViewModule extends ReactContextBaseJavaModule implements Life
                 }
             }
 
+            if (options.hasKey(PICKER_LEFT_TEXT)) {
+                leftText = options.getString(PICKER_LEFT_TEXT);
+            }
+            leftTextTV.setText(!TextUtils.isEmpty(leftText) ? leftText : "");
+            leftTextTV.setTextSize(pickerTextSize);
+            if (options.hasKey(PICKER_RIGHT_TEXT)) {
+                rightText = options.getString(PICKER_RIGHT_TEXT);
+            }
+            rightTextTV.setText(!TextUtils.isEmpty(rightText) ? rightText : "");
+            rightTextTV.setTextSize(pickerTextSize);
+
             ReadableArray pickerData = options.getArray(PICKER_DATA);
 
             int pickerViewHeight;
@@ -335,6 +367,7 @@ public class PickerViewModule extends ReactContextBaseJavaModule implements Life
                     pickerViewAlone.setTextSize(pickerTextSize);
                     pickerViewAlone.setTextEllipsisLen(pickerTextEllipsisLen);
                     pickerViewAlone.setIsLoop(isLoop);
+                    pickerViewAlone.setMultiSelection(multiSelection);
 
                     pickerViewAlone.setOnSelectedListener(new OnSelectedListener() {
                         @Override
@@ -506,7 +539,7 @@ public class PickerViewModule extends ReactContextBaseJavaModule implements Life
     private void select(String[] selectedValue) {
         switch (curStatus) {
             case 0:
-                pickerViewAlone.setSelectValue(selectedValue);
+                pickerViewAlone.setSelectValue(selectedValue, multiSelection);
                 break;
             case 1:
                 pickerViewLinkage.setSelectValue(selectedValue);

@@ -12,6 +12,8 @@ import com.facebook.react.bridge.ReadableArray;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 
 /**
  * Created by <a href="https://github.com/shexiaoheng">heng</a> on 16/9/6.
@@ -31,6 +33,7 @@ public class PickerViewAlone extends LinearLayout {
     private OnSelectedListener onSelectedListener;
 
     private ArrayList<ReturnData> curSelectedList;
+    private ArrayList<ReturnData> curSelectedListForMultipleSelection;
 
     public PickerViewAlone(Context context) {
         super(context);
@@ -53,6 +56,7 @@ public class PickerViewAlone extends LinearLayout {
 
     public void setPickerData(ReadableArray array, double[] weights) {
         curSelectedList = new ArrayList<>();
+        curSelectedListForMultipleSelection = new ArrayList<>();
         switch (array.getType(0).name()) {
             case "Array":
                 setMultipleData(array, weights);
@@ -65,6 +69,20 @@ public class PickerViewAlone extends LinearLayout {
 
     public ArrayList<ReturnData> getSelectedData() {
         return this.curSelectedList;
+    }
+
+    public ArrayList<ReturnData> getSelectedDataForMultipleSelection() {
+        Collections.sort(this.curSelectedListForMultipleSelection, new Comparator<ReturnData>() {
+            public int compare(ReturnData o1, ReturnData o2) {
+                if (o1.getIndex() > o2.getIndex()) {
+                    return 1;
+                } else if (o1.getIndex() < o2.getIndex()) {
+                    return -1;
+                }
+                return 0;
+            }
+        });
+        return this.curSelectedListForMultipleSelection;
     }
 
     private void setAloneData(ReadableArray array) {
@@ -93,6 +111,25 @@ public class PickerViewAlone extends LinearLayout {
                     returnData1.setIndex(index);
                     curSelectedList.set(0, returnData1);
                     onSelectedListener.onSelected(curSelectedList);
+                }
+            }
+
+            @Override
+            public void onItemSelectedForMultipleSelection(String item, int index) {
+                ReturnData returnData1 = new ReturnData();
+                returnData1.setItem(item);
+                returnData1.setIndex(index);
+                int deleteIndex = -1;
+                for (int i = 0; i < curSelectedListForMultipleSelection.size(); i++) {
+                    if (curSelectedListForMultipleSelection.get(i).getIndex() == index) {
+                        deleteIndex = i;
+                        break;
+                    }
+                }
+                if (deleteIndex > -1) {
+                    curSelectedListForMultipleSelection.remove(deleteIndex);
+                } else {
+                    curSelectedListForMultipleSelection.add(returnData1);
                 }
             }
         });
@@ -155,6 +192,11 @@ public class PickerViewAlone extends LinearLayout {
                                 onSelectedListener.onSelected(curSelectedList);
                             }
                         }
+
+                        @Override
+                        public void onItemSelectedForMultipleSelection(String item, int index) {
+
+                        }
                     });
                     pickerViewAloneLayout.addView(loopView);
                     break;
@@ -164,10 +206,12 @@ public class PickerViewAlone extends LinearLayout {
         }
     }
 
-    public void setSelectValue(String[] selectValue) {
+    public void setSelectValue(String[] selectValue, boolean multiSelection) {
         int viewCount = pickerViewAloneLayout.getChildCount();
         int valueCount = selectValue.length;
-        if (valueCount <= viewCount) {
+        if (multiSelection) {
+            setSelectForMultiple(valueCount, selectValue, curSelectedListForMultipleSelection);
+        } else if (valueCount <= viewCount) {
             setSelect(valueCount, selectValue, curSelectedList);
         } else {
             String[] values = Arrays.copyOf(selectValue, viewCount);
@@ -186,6 +230,22 @@ public class PickerViewAlone extends LinearLayout {
                     returnData.setItem(values[i]);
                     returnData.setIndex(loop.getSelectedIndex());
                     curSelectedList.set(i, returnData);
+                }
+            }
+        }
+    }
+
+    private void setSelectForMultiple(int size, String[] values, ArrayList<ReturnData> curSelectedList) {
+        if (size > 0) {
+            View view = pickerViewAloneLayout.getChildAt(0);
+            if (view instanceof LoopView) {
+                LoopView loop = (LoopView) view;
+                loop.setSelectedItems(values);
+                for (int i = 0; i < size; i++) {
+                    ReturnData returnData = new ReturnData();
+                    returnData.setItem(values[i]);
+                    returnData.setIndex(loop.getItemPosition(values[i]));
+                    curSelectedList.add(returnData);
                 }
             }
         }
@@ -244,6 +304,17 @@ public class PickerViewAlone extends LinearLayout {
                     LoopView loopView = (LoopView) view;
                     loopView.setNotLoop();
                 }
+            }
+        }
+    }
+
+    public void setMultiSelection(boolean multi) {
+        int viewCount = pickerViewAloneLayout.getChildCount();
+        for (int i = 0; i < viewCount; i++) {
+            View view = pickerViewAloneLayout.getChildAt(i);
+            if (view instanceof LoopView) {
+                LoopView loopView = (LoopView) view;
+                loopView.setMultiSelection(multi);
             }
         }
     }

@@ -12,7 +12,7 @@
 @implementation BzwPicker
 
 -(instancetype)initWithFrame:(CGRect)frame dic:(NSDictionary *)dic leftStr:(NSString *)leftStr centerStr:(NSString *)centerStr rightStr:(NSString *)rightStr topbgColor:(NSArray *)topbgColor bottombgColor:(NSArray *)bottombgColor leftbtnbgColor:(NSArray *)leftbtnbgColor rightbtnbgColor:(NSArray *)rightbtnbgColor centerbtnColor:(NSArray *)centerbtnColor selectValueArry:(NSArray *)selectValueArry  weightArry:(NSArray *)weightArry
-       pickerToolBarFontSize:(NSString *)pickerToolBarFontSize  pickerFontSize:(NSString *)pickerFontSize  pickerFontColor:(NSArray *)pickerFontColor pickerRowHeight:(NSString *)pickerRowHeight pickerFontFamily:(NSString *)pickerFontFamily
+       pickerToolBarFontSize:(NSString *)pickerToolBarFontSize  pickerFontSize:(NSString *)pickerFontSize  pickerFontColor:(NSArray *)pickerFontColor pickerRowHeight:(NSString *)pickerRowHeight pickerFontFamily:(NSString *)pickerFontFamily pickerLeftText:(NSString *)pickerLeftText pickerRightText:(NSString *)pickerRightText multiSelection:(BOOL)multiSelection
 
 {
     self = [super initWithFrame:frame];
@@ -23,6 +23,7 @@
         self.cityArray=[[NSMutableArray alloc]init];
         self.selectValueArry=selectValueArry;
         self.weightArry=weightArry;
+      self.selectedIndices = [[NSMutableArray alloc] init];
         self.pickerDic=dic;
         self.leftStr=leftStr;
         self.rightStr=rightStr;
@@ -32,6 +33,9 @@
         self.pickerFontFamily=pickerFontFamily;
         self.pickerFontColor=pickerFontColor;
         self.pickerRowHeight=pickerRowHeight;
+      self.pickerLeftText = pickerLeftText;
+      self.pickerRightText = pickerRightText;
+      self.multiSelection = multiSelection;
         [self getStyle];
         [self getnumStyle];
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -78,9 +82,32 @@
     self.pick.delegate = self;
     self.pick.dataSource = self;
     self.pick.showsSelectionIndicator=YES;
+  
+  if (self.multiSelection) {
+  UITapGestureRecognizer *pickerTap =
+    [[UITapGestureRecognizer alloc] initWithTarget:self
+                                            action:@selector(handleSingleTap:)];
+  pickerTap.delegate = self;
+  [self.pick addGestureRecognizer:pickerTap];
+  }
+  
     [self addSubview:self.pick];
     
     self.pick.backgroundColor=[self colorWith:bottombgColor];
+  
+  UILabel *leftLabel = [[UILabel alloc] initWithFrame:CGRectMake(45, (self.frame.size.height - 40 - 30) / 2, 100, 30)];
+  leftLabel.text = self.pickerLeftText;
+  leftLabel.textAlignment=NSTextAlignmentLeft;
+  leftLabel.font = [UIFont fontWithName:_pickerFontFamily size:[_pickerFontSize integerValue]];
+  [leftLabel setTextColor:[self colorWith:centerbtnColor]];
+  [self.pick addSubview:leftLabel];
+  
+  UILabel *rightLabel = [[UILabel alloc] initWithFrame:CGRectMake(self.frame.size.width - 45 - 100, (self.frame.size.height - 40 - 30) / 2, 100, 30)];
+  rightLabel.text = self.pickerRightText;
+  rightLabel.textAlignment=NSTextAlignmentRight;
+  rightLabel.font = [UIFont fontWithName:_pickerFontFamily size:[_pickerFontSize integerValue]];
+  [rightLabel setTextColor:[self colorWith:centerbtnColor]];
+  [self.pick addSubview:rightLabel];
 }
 //返回显示的列数
 -(NSInteger)numberOfComponentsInPickerView:(UIPickerView *)pickerView
@@ -464,7 +491,7 @@
 
 - (CGFloat)pickerView:(UIPickerView *)pickerView rowHeightForComponent:(NSInteger)component
 {
-    return self.pickerRowHeight.integerValue;
+    return 50;
 }
 
 //判断进来的类型是那种
@@ -620,7 +647,23 @@
     
     NSMutableDictionary *dic=[[NSMutableDictionary alloc]init];
     
-    if (self.backArry.count>0) {
+  if (self.multiSelection) {
+      
+    NSMutableArray *selectedArry = [[NSMutableArray alloc] init];
+    self.selectedIndices = [[self.selectedIndices sortedArrayUsingSelector: @selector(compare:)] mutableCopy];
+    for (int i = 0; i < self.selectedIndices.count; i++) {
+      NSNumber *number = [self.selectedIndices objectAtIndex:i];
+      [selectedArry addObject:[self.noCorreArry objectAtIndex:[number intValue]]];
+    }
+      [dic setValue:selectedArry forKey:@"selectedValue"];
+      [dic setValue:@"confirm" forKey:@"type"];
+      NSMutableArray *arry=[[NSMutableArray alloc]init];
+      [dic setValue:self.selectedIndices forKey:@"selectedIndex"];
+//        [dic setValue:arry forKey:@"selectedIndex"];
+      
+      self.bolock(dic);
+      
+  } else if (self.backArry.count>0 && !self.multiSelection) {
         
         [dic setValue:self.backArry forKey:@"selectedValue"];
         [dic setValue:@"confirm" forKey:@"type"];
@@ -804,19 +847,23 @@
 {
     if (_noArryElementBool) {
         //这里表示数组里面就只有一个数组 比较特殊的情况[]
-        NSString *selectStr;
-        if (self.selectValueArry.count>0) {
-            
-            selectStr=[NSString stringWithFormat:@"%@",[self.selectValueArry firstObject]];
-        }
+      NSInteger scrollIndex = -1;
         for (NSInteger i=0; i<self.noCorreArry.count; i++) {
             NSString *str=[NSString stringWithFormat:@"%@",[self.noCorreArry objectAtIndex:i]];
-            if ([selectStr isEqualToString:str]) {
-                [_pick reloadAllComponents];
-                [_pick selectRow:i  inComponent:0 animated:NO];
-                break;
+            if ([self.selectValueArry containsObject:str]) {
+              if (scrollIndex == -1) {
+              scrollIndex = i;
+              }
+              if (self.multiSelection) {
+              [self.selectedIndices addObject:[NSNumber numberWithInt:i]];
+              }
             }
         }
+      if (scrollIndex == -1) {
+        scrollIndex = 0;
+      }
+      [_pick reloadAllComponents];
+      [_pick selectRow:scrollIndex  inComponent:0 animated:NO];
         
     }else{
         //这里就比较复杂了 [[],[],[]]
@@ -936,21 +983,51 @@
 }
 
 -(UIView *)pickerView:(UIPickerView *)pickerView viewForRow:(NSInteger)row forComponent:(NSInteger)component reusingView:(UIView *)view{
-    
-    UILabel *lbl = (UILabel *)view;
-    
-    if (lbl == nil) {
-        lbl = [[UILabel alloc]init];
-        lbl.font = [UIFont fontWithName:_pickerFontFamily size:[_pickerFontSize integerValue]];
-        lbl.textColor = [self colorWith:_pickerFontColor];
-        lbl.textAlignment = UITextAlignmentCenter;
+        
+    if (view == nil) {
+      BzwPickerViewRow *newView = [[BzwPickerViewRow alloc] initWithFrame:CGRectMake(0, 0, pickerView.frame.size.width, 50)];
+      newView.label.font = [UIFont fontWithName:_pickerFontFamily size:[_pickerFontSize integerValue]];
+      if ([self.selectedIndices containsObject:[NSNumber numberWithInt:row]]) {
+        newView.label.textColor = [UIColor colorWithRed:0 green:109/255.0 blue:237/255.0 alpha:1];
+        newView.label.text = [self pickerView:pickerView titleForRow:row forComponent:component];
+        [newView.checkmark setHidden:NO];
+      } else {
+        newView.label.textColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:1];
+        newView.label.text = [self pickerView:pickerView titleForRow:row forComponent:component];
+        
+        [newView.checkmark setHidden:YES];
+      }
+      
+      return newView;
+    } else {
+      return view;
     }
     
     //重新加载lbl的文字内容
-    lbl.text = [self pickerView:pickerView titleForRow:row forComponent:component];
+//    lbl.text = [self pickerView:pickerView titleForRow:row forComponent:component];
     
-    return lbl;
-    
+}
+
+- (void)handleSingleTap:(UITapGestureRecognizer *)recognizer
+{ 
+  if (recognizer.state == UIGestureRecognizerStateEnded) {
+          CGFloat rowHeight = [self.pick rowSizeForComponent:0].height;
+          CGRect selectedRowFrame = CGRectInset(self.pick.bounds, 0.0, (CGRectGetHeight(self.pick.frame) - rowHeight) / 2.0 );
+          BOOL userTappedOnSelectedRow = (CGRectContainsPoint(selectedRowFrame, [recognizer locationInView:self.pick]));
+          if (userTappedOnSelectedRow) {
+              NSInteger selectedRow = [self.pick selectedRowInComponent:0];
+            if ([self.selectedIndices containsObject:[NSNumber numberWithInt:selectedRow]]) {
+              [self.selectedIndices removeObject:[NSNumber numberWithInt:selectedRow]];
+            } else {
+              [self.selectedIndices addObject:[NSNumber numberWithInt:selectedRow]];
+            }
+            [self.pick reloadAllComponents];
+          }
+      }
+}
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer{
+  return YES;
 }
 
 - (BOOL)anySubViewScrolling:(UIView *)view{

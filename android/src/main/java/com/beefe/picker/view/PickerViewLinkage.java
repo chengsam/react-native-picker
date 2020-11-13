@@ -245,6 +245,11 @@ public class PickerViewLinkage extends LinearLayout {
                     }
 
                 }
+
+                @Override
+                public void onItemSelectedForMultipleSelection(String item, int index) {
+
+                }
             });
 
             loopViewTwo.setListener(new OnItemSelectedListener() {
@@ -290,6 +295,11 @@ public class PickerViewLinkage extends LinearLayout {
 
 
                 }
+
+                @Override
+                public void onItemSelectedForMultipleSelection(String item, int index) {
+
+                }
             });
 
             loopViewThree.setListener(new OnItemSelectedListener() {
@@ -324,6 +334,11 @@ public class PickerViewLinkage extends LinearLayout {
                         onSelectedListener.onSelected(curSelectedList);
                     }
                 }
+
+                @Override
+                public void onItemSelectedForMultipleSelection(String item, int index) {
+
+                }
             });
         } else {
             setRow(2);
@@ -346,6 +361,11 @@ public class PickerViewLinkage extends LinearLayout {
                     if (onSelectedListener != null) {
                         onSelectedListener.onSelected(curSelectedList);
                     }
+                }
+
+                @Override
+                public void onItemSelectedForMultipleSelection(String item, int index) {
+
                 }
             });
 
@@ -375,6 +395,11 @@ public class PickerViewLinkage extends LinearLayout {
                     if (onSelectedListener != null) {
                         onSelectedListener.onSelected(curSelectedList);
                     }
+                }
+
+                @Override
+                public void onItemSelectedForMultipleSelection(String item, int index) {
+
                 }
             });
         }
