@@ -53,7 +53,7 @@
     
     self.leftBtn = [UIButton buttonWithType:UIButtonTypeCustom];
     self.leftBtn.frame = CGRectMake(0, 0, 90, 40);
-    self.leftBtn.font = [UIFont fontWithName:_pickerFontFamily size:[_pickerToolBarFontSize integerValue]];
+    self.leftBtn.font = [UIFont systemFontOfSize:[_pickerToolBarFontSize integerValue]];
     self.leftBtn.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
     [self.leftBtn setTitleEdgeInsets:UIEdgeInsetsMake(0, 10.0, 0, 0)];
     [self.leftBtn setTitle:self.leftStr forState:UIControlStateNormal];
@@ -63,7 +63,7 @@
     
     self.rightBtn = [UIButton buttonWithType:UIButtonTypeCustom];
     self.rightBtn.frame = CGRectMake(view.frame.size.width-90,0, 90, 40);
-    self.rightBtn.font = [UIFont fontWithName:_pickerFontFamily size:[_pickerToolBarFontSize integerValue]];
+    self.rightBtn.font = [UIFont systemFontOfSize:[_pickerToolBarFontSize integerValue]];
     self.rightBtn.contentHorizontalAlignment=UIControlContentHorizontalAlignmentRight;
     [self.rightBtn setTitleEdgeInsets:UIEdgeInsetsMake(0, 0, 0, 10.0)];
     [self.rightBtn setTitle:self.rightStr forState:UIControlStateNormal];
@@ -74,7 +74,7 @@
     UILabel *cenLabel=[[UILabel alloc]initWithFrame:CGRectMake(90, 5, SCREEN_WIDTH-180, 30)];
     cenLabel.text=self.centStr;
     cenLabel.textAlignment=NSTextAlignmentCenter;
-    cenLabel.font = [UIFont fontWithName:_pickerFontFamily size:[_pickerToolBarFontSize integerValue]];
+    cenLabel.font = [UIFont systemFontOfSize:[_pickerToolBarFontSize integerValue]];
     [cenLabel setTextColor:[self colorWith:centerbtnColor]];
     [view addSubview:cenLabel];
 
@@ -98,14 +98,14 @@
   UILabel *leftLabel = [[UILabel alloc] initWithFrame:CGRectMake(45, (self.frame.size.height - 40 - 30) / 2, 100, 30)];
   leftLabel.text = self.pickerLeftText;
   leftLabel.textAlignment=NSTextAlignmentLeft;
-  leftLabel.font = [UIFont fontWithName:_pickerFontFamily size:[_pickerFontSize integerValue]];
+  leftLabel.font = [UIFont systemFontOfSize:[_pickerFontSize integerValue]];
   [leftLabel setTextColor:[self colorWith:centerbtnColor]];
   [self.pick addSubview:leftLabel];
   
   UILabel *rightLabel = [[UILabel alloc] initWithFrame:CGRectMake(self.frame.size.width - 45 - 100, (self.frame.size.height - 40 - 30) / 2, 100, 30)];
   rightLabel.text = self.pickerRightText;
   rightLabel.textAlignment=NSTextAlignmentRight;
-  rightLabel.font = [UIFont fontWithName:_pickerFontFamily size:[_pickerFontSize integerValue]];
+  rightLabel.font = [UIFont systemFontOfSize:[_pickerFontSize integerValue]];
   [rightLabel setTextColor:[self colorWith:centerbtnColor]];
   [self.pick addSubview:rightLabel];
 }
@@ -986,7 +986,7 @@
         
     if (view == nil) {
       BzwPickerViewRow *newView = [[BzwPickerViewRow alloc] initWithFrame:CGRectMake(0, 0, pickerView.frame.size.width, 50)];
-      newView.label.font = [UIFont fontWithName:_pickerFontFamily size:[_pickerFontSize integerValue]];
+      newView.label.font = [UIFont systemFontOfSize:[_pickerFontSize integerValue]];
       if ([self.selectedIndices containsObject:[NSNumber numberWithInt:row]]) {
         newView.label.textColor = [UIColor colorWithRed:0 green:109/255.0 blue:237/255.0 alpha:1];
         newView.label.text = [self pickerView:pickerView titleForRow:row forComponent:component];
